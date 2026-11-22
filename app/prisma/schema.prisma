@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Conversation {
+  id        String                @id @default(cuid())
+  userId    String                @default("local-user") @map("user_id")
+  title     String                @default("New conversation")
+  createdAt DateTime              @default(now()) @map("created_at")
+  updatedAt DateTime              @updatedAt @map("updated_at")
+  messages  ConversationMessage[]
+  logs      AgentExecutionLog[]
+  @@index([userId, updatedAt])
+  @@map("conversations")
+}
+
+model ConversationMessage {
+  id             String       @id @default(cuid())
+  conversationId String       @map("conversation_id")
+  role           String
+  content        String       @db.Text
+  createdAt      DateTime     @default(now()) @map("created_at")
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  @@index([conversationId, createdAt])
+  @@map("conversation_messages")
+}
+
+model AgentExecutionLog {
+  id             String       @id @default(cuid())
+  conversationId String?      @map("conversation_id")
+  agent          String
+  status         String
+  summary        String       @db.Text
+  createdAt      DateTime     @default(now()) @map("created_at")
+  conversation   Conversation? @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  @@index([createdAt])
+  @@map("agent_execution_logs")
+}
+
+model ToolExecutionLog {
+  id        String   @id @default(cuid())
+  tool      String
+  status    String
+  source    String?
+  createdAt DateTime @default(now()) @map("created_at")
+  @@index([createdAt])
+  @@map("tool_execution_logs")
+}
+
+model UserPreference {
+  id        String   @id @default(cuid())
+  userId    String   @unique @map("user_id")
+  location  String?
+  language  String   @default("en")
+  consentAt DateTime? @map("consent_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  @@map("user_preferences")
+}
+
+model DataSourceStatus {
+  id          String   @id @default(cuid())
+  source      String   @unique
+  status      String
+  checkedAt   DateTime @default(now()) @map("checked_at")
+  detail      String?
+  @@map("data_source_status")
+}
+
+model AnalysisReport {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  title     String
+  payload   Json
+  createdAt DateTime @default(now()) @map("created_at")
+  @@index([userId, createdAt])
+  @@map("analysis_reports")
+}
+
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  title     String
+  body      String   @db.Text
+  readAt    DateTime? @map("read_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  @@index([userId, createdAt])
+  @@map("user_notifications")
+}
